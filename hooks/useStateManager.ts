@@ -13,14 +13,25 @@ interface StateManagerFetch<T> {
 }
 
 interface StateManager<TResult> {
-    store: (toStore: any) => void;
+    store: (toStore: TResult) => void;
+    merge: (toStore: Partial<TResult>) => void;
+    clear: () => void;
     retrieve: () => DataContextStateType<TResult>;
     start: () => void;
     error: (error: any) => void;
 }
 
-function promiseWithStateManager<T>(sm: StateManager<T>, promise: Promise<T>) {
-    sm.start();
+function promiseWithStateManager<T>(dataPolicy: DataPolicy, sm: StateManager<T>, promise: Promise<T>) {
+    let _waiter: number | undefined = undefined
+
+    if (dataPolicy.smartTracking === undefined ||
+        (typeof dataPolicy.smartTracking === 'boolean' && dataPolicy.smartTracking)) {
+        sm.start();
+    } else {
+        _waiter = setTimeout((_self: StateManager<T>) => {
+            _self.start()
+        }, dataPolicy.smartTracking, sm);
+    }
     promise
         .then(sm.store)
         .catch((err: any) => {
@@ -29,48 +40,71 @@ function promiseWithStateManager<T>(sm: StateManager<T>, promise: Promise<T>) {
             } else
                 sm.error(err)
         })
+        .finally(() => { _waiter && clearTimeout(_waiter) })
 }
 
-export function useStateManager<T extends TPromise>(key: string, dataPolicy: DataPolicy, promise: T): StateManagerFetch<T> & StateManager<PromiseResult<ReturnType<T>>> {
-    const [data, setData] = useState<DataContextStateType<any>>({})
-    const { contextState: pluginState, contextStateDispatch: pluginStateDispatch } = useContext(PluginDataContext)
-    const { contextState: applicationState, contextStateDispatch: applicationStateDispatch } = useContext(ApplicationDataContext)
+export function useStateManager<T extends TPromise, TResult extends PromiseResult<ReturnType<T>>>(key: string, dataPolicy: DataPolicy, promise: T): StateManagerFetch<T> & StateManager<TResult> {
+    const stateScope = dataPolicy.scope || 'component'
+    const [data, setData] = useState<DataContextStateType<TResult>>({})
+    const { contextState, contextStateDispatch } = stateScope === 'plugin' ? useContext(PluginDataContext) : stateScope === 'application' ? useContext(ApplicationDataContext) : {} as any
     const { checkedPromise } = useCheckedPromise()
 
-    const store = (toStore: DataContextStateType<any>, preserveValue: boolean = false) => {
-        const dispatch = (dispatcher: (action: DataContextActionType) => void, preserveValue: boolean, key: string, toStore: any) => {
-            if (preserveValue) {
-                dispatcher({ key, data: toStore })
-            }
-            else {
-                dispatcher({ key, data: { value: toStore, error: undefined, loading: false } })
-            }
+    const dispatch = (dispatcher: (action: DataContextActionType) => void, preserveValue: boolean, key: string, toStore: any) => {
+        if (preserveValue) {
+            dispatcher({ key, data: toStore })
         }
-        switch (dataPolicy.scope) {
+        else {
+            dispatcher({ key, data: { value: toStore, error: undefined, loading: false } })
+        }
+    }
+
+    const clear = () => {
+        switch (stateScope) {
+            case "component":
+                setData({})
+                break;
+            case "plugin":
+            case "application":
+                dispatch(contextStateDispatch, false, key, undefined)
+                break;
+        }
+    }
+
+    const merge = (toStore: Partial<TResult>) => {
+        switch (stateScope) {
+            case "component":
+                setData(p => ({ ...p, value: { ...p.value, ...toStore } as TResult }))
+                break;
+            case "plugin":
+            case "application":
+                dispatch(contextState, false, key, { ...contextState[key]?.value, ...toStore })
+                break;
+        }
+    }
+
+    const store = (toStore: TResult | DataContextStateType<TResult>, preserveValue: boolean = false) => {
+        switch (stateScope) {
             case "component":
                 if (preserveValue) {
                     setData(p => ({ ...p, ...toStore }))
                 } else {
-                    setData({ value: toStore, error: undefined, loading: false })
+                    setData({ value: toStore as TResult, error: undefined, loading: false })
                 }
                 break;
             case "plugin":
-                dispatch(pluginStateDispatch, preserveValue, key, toStore)
-                break;
             case "application":
-                dispatch(applicationStateDispatch, preserveValue, key, toStore)
+                dispatch(contextStateDispatch, preserveValue, key, toStore)
                 break;
         }
     }
 
     const retrieve = () => {
-        switch (dataPolicy.scope) {
+        switch (stateScope) {
             case "component":
                 return data;
             case "plugin":
-                return pluginState[key];
             case "application":
-                return applicationState[key];
+                return contextState[key] || {};
         }
     }
 
@@ -78,13 +112,14 @@ export function useStateManager<T extends TPromise>(key: string, dataPolicy: Dat
 
     const error = (error: any) => store({ loading: false, error }, true)
 
-    const sm = { store, retrieve, start, error }
+    const sm = { store, merge, clear, retrieve, start, error }
 
     const fetch = (...args: Arguments<TPromise>) => {
         if (typeof promise === 'function')
-            promiseWithStateManager(sm, checkedPromise(promise(...args), false))
+            promiseWithStateManager(dataPolicy, sm, checkedPromise(promise(...args), false))
         else
             console.error('Bad fetch call, not a function!')
     }
+
     return { ...sm, fetch };
 }

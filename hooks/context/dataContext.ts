@@ -1,5 +1,6 @@
 export type DataPolicy = {
-    scope: 'application' | 'component' | 'plugin'
+    scope: 'application' | 'component' | 'plugin',
+    smartTracking?: boolean | number
 }
 
 export const DefaultDataPolicy: DataPolicy = {

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Button, SafeAreaView } from 'react-native';
+import { Button, SafeAreaView, useColorScheme } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { createStyleBuilder, useStyles } from '../../hooks/useStyles';
 import { View, Text } from '../Themed';
@@ -14,16 +14,18 @@ const myBuilder = createStyleBuilder(opts => ({
 
 export const MyPlugin = () => {
   const { book, books, fetchBooks, fetchBookById } = useBookData()
-  const { style } = useStyles(myBuilder)
+  // const { style } = useStyles(myBuilder)
+  const theme = useColorScheme()
 
   React.useEffect(() => { fetchBookById(3); fetchBooks() }, [fetchBookById, fetchBooks])
 
   console.log('rendering  MyPlugin...')
+  console.log( theme)
 
   return (
     <SafeAreaView>
       <ScrollView>
-        <Text style={style.text} >[MyPugin]</Text>
+        <Text style={ { textAlign: 'center'}} >[MyPugin]</Text>
         <Text >Book</Text><Button title="Fetch another book!" onPress={() => fetchBookById(1)} />
         <Text >{JSON.stringify(book, null, 2)}</Text>
 

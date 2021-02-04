@@ -15,18 +15,21 @@ export type StyleOptions = {
 
 export function useStyles<TStyle>(styleBuilder: (options: StyleOptions) => TStyle): { style: TStyle, getStyleByName: ((text: string) => string) };
 export function useStyles<TStyle>(styleBuilder: (options: StyleOptions) => StyleSheet.NamedStyles<TStyle>) {
-    const window = useWindow();
-    const appContext = React.useContext(PluginDataContext)
+    const window : any = {
+        size: Dimensions.get('window'),
+        orientation:'portrait'
+    }; // useWindow();
+    // const appContext = React.useContext(PluginDataContext)
     const theme = useColorScheme();
 
-    const profileColors = {} as typeof Colors;
+    const profileColors = Colors; // {} as typeof Colors;
 
     const styleOptions: StyleOptions = {
         ...window,
         theme: theme,
         colors: profileColors
     }
-    const style = React.useMemo(() => styleBuilder(styleOptions), [window.orientation, theme]);
+    const style = React.useMemo(() => styleBuilder(styleOptions), [theme]);
     return ({
         style,
         getStyleByName: (text: string): any => style && (<any>style)[text]
