@@ -35,13 +35,13 @@ export function useStyle(styleBuilder: (options: StyleOptions) => any) {
             ? profile.value.colors.dark
             : profile.value.colors.light
         : Colors.light
-
+        
     const styleOptions: any = {
         theme: theme,
         colors: profileColors
     }
 
-    const style = React.useMemo(() => styleBuilder(styleOptions), [window.orientation, profile.value, theme]);
+    const style = React.useMemo(() => styleBuilder(styleOptions), [profile.value, theme]);
     return ({
         style,
         getStyleByName: (text: string) => style && style[text]
@@ -79,7 +79,7 @@ export function useStyles<TStyle, TObjectStyle>(
             }
         }
         return obj
-    }, [window.orientation, profile.value, theme])
+    }, [profile.value, theme])
 
     return ret
 }
