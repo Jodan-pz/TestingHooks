@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarOptions, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import * as React from 'react';
-import { MyPlugin } from '../components/TestUseData/MyPlugin';
+import { MyPlugin } from '../components/plugins/MyPlugin';
 import { createObjectStyleBuilder, useStyle } from '../hooks/useStyles';
 import PluginManager from '../pluginManager';
 import TabOneScreen from '../screens/TabOneScreen';

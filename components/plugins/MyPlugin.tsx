@@ -10,6 +10,7 @@ const pluginStyle = (window?: WindowProps) => StyleSheet.create(({
     textAlign: window?.orientation === 'landscape' ? 'center' : 'right'
   }
 }))
+
 export const MyPlugin = () => {
   const { book, books, fetchBooks, fetchBookById } = useData('books')
   const window = useWindow()
@@ -17,7 +18,7 @@ export const MyPlugin = () => {
 
   React.useEffect(() => { fetchBookById(3); fetchBooks() }, [fetchBookById, fetchBooks])
 
-  console.log('rendering  MyPlugin...')
+  console.log('...rendering MyPlugin')
 
   return (
     <SafeAreaView>
@@ -39,7 +40,7 @@ const AltroCompo = () => {
   const { book, fetchBookById } = useData('books')
   React.useEffect(() => { fetchBookById(2) }, [fetchBookById])
 
-  console.log('rendering  Altro Compo...')
+  console.log('...rendering MyPlugin->Altro Compo')
   return (
     <View>
       <Text style={{ textAlign: 'center' }} >Altro Compo</Text>

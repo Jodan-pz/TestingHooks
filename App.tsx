@@ -1,8 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { MyPlugin } from './components/TestUseData/MyPlugin';
-import { MyPluginContext } from './components/TestUseData/MyPluginContext';
+import { MyPlugin } from './components/plugins/MyPlugin';
+import { MyPluginContext } from './components/plugins/MyPluginContext';
 import { ApplicationDataProvider } from './hooks/context/ApplicationDataProvider';
 import useCachedResources from './hooks/useCachedResources';
 import useColorScheme from './hooks/useColorScheme';

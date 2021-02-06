@@ -23,9 +23,10 @@ interface StateManager<TResult> {
 
 function promiseWithStateManager<T>(dataPolicy: DataPolicy, sm: StateManager<T>, promise: Promise<T>) {
     let _waiter: number | undefined = undefined
+    const st = dataPolicy.smartTracking === undefined ? true : dataPolicy.smartTracking;
 
-    if (dataPolicy.smartTracking === undefined || typeof dataPolicy.smartTracking === 'boolean') {
-        if (dataPolicy.smartTracking) {
+    if (typeof st === 'boolean') {
+        if (st) {
             try {
                 sm.start();
             } catch (err: any) {
@@ -39,7 +40,7 @@ function promiseWithStateManager<T>(dataPolicy: DataPolicy, sm: StateManager<T>,
             } catch (err: any) {
                 if (!PromiseCanceledError.isError(err)) throw err
             }
-        }, dataPolicy.smartTracking, sm);
+        }, st, sm);
     }
     promise
         .then(sm.store)
