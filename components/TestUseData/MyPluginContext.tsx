@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { Button, SafeAreaView, ScrollView, useWindowDimensions } from 'react-native';
 import { View, Text } from '../Themed';
-import { useBookData } from './useBookData';
+import { useData } from '../../hooks/useData';
 
 export const MyPluginContext = () => {
-  const { book, books, fetchBooks, fetchBookById } = useBookData({ scope: 'plugin' })
+  const { book, books, fetchBooks, fetchBookById } = useData('books', { scope: 'plugin' })
   const window = useWindowDimensions();
 
   React.useEffect(() => { fetchBookById(3); fetchBooks() }, [fetchBookById, fetchBooks])
@@ -30,7 +30,7 @@ export const MyPluginContext = () => {
 }
 
 const AltroCompo = () => {
-  const { book } = useBookData({ scope: 'plugin' })
+  const { book } = useData('books',{ scope: 'plugin' })
 
   console.log('rendering  Altro Compo...')
   return (

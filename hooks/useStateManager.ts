@@ -2,7 +2,7 @@ import { useState, useContext } from "react";
 import { ApplicationDataContext } from "./context/ApplicationDataProvider";
 import { DataContextStateType, DataContextActionType, DataPolicy } from "./context/dataContext";
 import { PluginDataContext } from "./context/PluginDataProvider";
-import { useCheckedPromise } from "./useCheckedPromise";
+import { PromiseCanceledError, useCheckedPromise } from "./useCheckedPromise";
 
 type Arguments<T> = T extends (...args: infer A) => any ? A : never
 type TPromise = (...args: any) => any
@@ -24,19 +24,29 @@ interface StateManager<TResult> {
 function promiseWithStateManager<T>(dataPolicy: DataPolicy, sm: StateManager<T>, promise: Promise<T>) {
     let _waiter: number | undefined = undefined
 
-    if (dataPolicy.smartTracking === undefined ||
-        (typeof dataPolicy.smartTracking === 'boolean' && dataPolicy.smartTracking)) {
-        sm.start();
+    if (dataPolicy.smartTracking === undefined || typeof dataPolicy.smartTracking === 'boolean') {
+        if (dataPolicy.smartTracking) {
+            try {
+                sm.start();
+            } catch (err: any) {
+                if (!PromiseCanceledError.isError(err)) throw err
+            }
+        }
     } else {
         _waiter = setTimeout((_self: StateManager<T>) => {
-            _self.start()
+            try {
+                _self.start()
+            } catch (err: any) {
+                if (!PromiseCanceledError.isError(err)) throw err
+            }
         }, dataPolicy.smartTracking, sm);
     }
     promise
         .then(sm.store)
         .catch((err: any) => {
             if (err instanceof Error) {
-                sm.error({ ...err, name: err.name, message: err.message })
+                if (!PromiseCanceledError.isError(err))
+                    sm.error({ ...err, name: err.name, message: err.message })
             } else
                 sm.error(err)
         })
@@ -46,8 +56,8 @@ function promiseWithStateManager<T>(dataPolicy: DataPolicy, sm: StateManager<T>,
 export function useStateManager<T extends TPromise, TResult extends PromiseResult<ReturnType<T>>>(key: string, dataPolicy: DataPolicy, promise: T): StateManagerFetch<T> & StateManager<TResult> {
     const stateScope = dataPolicy.scope || 'component'
     const [data, setData] = useState<DataContextStateType<TResult>>({})
-    const { contextState, contextStateDispatch } = stateScope === 'plugin' ? useContext(PluginDataContext) : stateScope === 'application' ? useContext(ApplicationDataContext) : {} as any
     const { checkedPromise } = useCheckedPromise()
+    const { contextState, contextStateDispatch } = stateScope === 'plugin' ? useContext(PluginDataContext) : stateScope === 'application' ? useContext(ApplicationDataContext) : {} as any
 
     const dispatch = (dispatcher: (action: DataContextActionType) => void, preserveValue: boolean, key: string, toStore: any) => {
         if (preserveValue) {

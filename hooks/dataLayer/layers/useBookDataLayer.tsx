@@ -1,7 +1,7 @@
 // import * as React from 'react';
 import { useCallback } from "react"
-import { DataPolicy, DefaultDataPolicy } from "../../hooks/context/dataContext"
-import { useStateManager } from "../../hooks/useStateManager"
+import { DataPolicy, DefaultDataPolicy } from "../../context/dataContext"
+import { useStateManager } from "../../useStateManager"
 
 
 // --------------------------------------------------------------------------------------------------
@@ -24,9 +24,9 @@ const getBooksPromise = () => new Promise<Book[]>(res => setTimeout(() => {
     res(Books)
 }, (Math.floor(Math.random() * 10) + 1) * 1000))
 
-export const useBookData = (dataPolicy?: DataPolicy) => {
-    const _book = useStateManager('book', dataPolicy || DefaultDataPolicy, getBookByIdPromise)
-    const _books = useStateManager('books', dataPolicy || DefaultDataPolicy, getBooksPromise)
+export const useBookDataLayer = (dataPolicy: DataPolicy) => {
+    const _book = useStateManager('book', dataPolicy, getBookByIdPromise)
+    const _books = useStateManager('books', dataPolicy, getBooksPromise)
     return (
         {
             book: _book.retrieve(),

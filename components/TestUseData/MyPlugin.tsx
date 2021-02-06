@@ -1,31 +1,28 @@
 import * as React from 'react';
-import { Button, SafeAreaView, useColorScheme } from 'react-native';
+import { Button, SafeAreaView, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { createStyleBuilder, useStyles } from '../../hooks/useStyles';
+import { useWindow, WindowProps } from '../../hooks/useWindow';
 import { View, Text } from '../Themed';
+import { useData } from '../../hooks/useData';
 
-import { useBookData } from './useBookData';
-
-const myBuilder = createStyleBuilder(opts => ({
+const pluginStyle = (window?: WindowProps) => StyleSheet.create(({
   text: {
-    textAlign: (opts.orientation === 'landscape') ? 'center' : 'left'
+    textAlign: window?.orientation === 'landscape' ? 'center' : 'right'
   }
 }))
-
 export const MyPlugin = () => {
-  const { book, books, fetchBooks, fetchBookById } = useBookData()
-  // const { style } = useStyles(myBuilder)
-  const theme = useColorScheme()
+  const { book, books, fetchBooks, fetchBookById } = useData('books')
+  const window = useWindow()
+  const style = pluginStyle(window);
 
   React.useEffect(() => { fetchBookById(3); fetchBooks() }, [fetchBookById, fetchBooks])
 
   console.log('rendering  MyPlugin...')
-  console.log( theme)
 
   return (
     <SafeAreaView>
       <ScrollView>
-        <Text style={ { textAlign: 'center'}} >[MyPugin]</Text>
+        <Text style={style.text}>[MyPugin]</Text>
         <Text >Book</Text><Button title="Fetch another book!" onPress={() => fetchBookById(1)} />
         <Text >{JSON.stringify(book, null, 2)}</Text>
 
@@ -39,7 +36,7 @@ export const MyPlugin = () => {
 }
 
 const AltroCompo = () => {
-  const { book, fetchBookById } = useBookData()
+  const { book, fetchBookById } = useData('books')
   React.useEffect(() => { fetchBookById(2) }, [fetchBookById])
 
   console.log('rendering  Altro Compo...')

@@ -3,61 +3,54 @@ import { BottomTabBarOptions, createBottomTabNavigator } from '@react-navigation
 import { createStackNavigator } from '@react-navigation/stack';
 import * as React from 'react';
 import { MyPlugin } from '../components/TestUseData/MyPlugin';
-import { MyPluginContext } from '../components/TestUseData/MyPluginContext';
-
-import Colors from '../constants/Colors';
-import { withPluginContext } from '../hooks/context/PluginContext';
-import { PluginDataProvider } from '../hooks/context/PluginDataProvider';
-import useColorScheme from '../hooks/useColorScheme';
-import { createObjectStyleBuilder, createStyleBuilder, useStyles } from '../hooks/useStyles';
+import { createObjectStyleBuilder, useStyle } from '../hooks/useStyles';
+import PluginManager from '../pluginManager';
 import TabOneScreen from '../screens/TabOneScreen';
 import TabTwoScreen from '../screens/TabTwoScreen';
 import { BottomTabParamList, TabOneParamList, TabTwoParamList } from '../types';
 
-
-const getPlugin = (props: any) => {
-
-  return withPluginContext(MyPlugin, {})
-}
-const getPluginX = (num: number) => (props: any) => {
-  console.log('creating plugin number #' + num)
-  return withPluginContext(MyPlugin, {})
-}
-
-const getPlugin2 = (props: any) => {
-
-  return withPluginContext(MyPluginContext, {})
-}
-
 const BottomTab = createBottomTabNavigator<BottomTabParamList>();
 
 const tabStyleBuilder = createObjectStyleBuilder<BottomTabBarOptions>(opts => ({
-  activeTintColor: opts.colors.light.tint
+  activeTintColor: opts.colors.tint
 }))
+
 export default function BottomTabNavigator() {
-  const colorScheme = useColorScheme();
-  const { style } = useStyles(tabStyleBuilder)
+  const { style } = useStyle(tabStyleBuilder)
 
   return (
     <BottomTab.Navigator
       initialRouteName="TabOne"
       tabBarOptions={style}>
       <BottomTab.Screen
-        name="TabOne"
-        // component={getPlugin}
-        // children={(p) => getPluginX(1)(p)}
-        component={TabOneScreen}
+        name="TabMy"
+        children={(p) => PluginManager.get({ key:'1', pluginName:'MyPlugin'})(p)}
+        // component={MyPlugin}
         options={{
           tabBarIcon: ({ color }) => <TabBarIcon name="ios-code" color={color} />,
         }}
       />
-      {/* <BottomTab.Screen
-        name="TabTwo"
-        component={getPlugin}
+      <BottomTab.Screen
+        name="TabMyPlus"
+        children={(p) => PluginManager.get({ key:'2', pluginName:'MyPluginContext'})(p)}
         options={{
           tabBarIcon: ({ color }) => <TabBarIcon name="ios-code" color={color} />,
         }}
-      /> */}
+      />
+      <BottomTab.Screen
+        name="TabOne"
+        component={TabOneNavigator}
+        options={{
+          tabBarIcon: ({ color }) => <TabBarIcon name="ios-code" color={color} />,
+        }}
+      />
+      <BottomTab.Screen
+        name="TabTwo"
+        component={TabTwoNavigator}
+        options={{
+          tabBarIcon: ({ color }) => <TabBarIcon name="ios-code" color={color} />,
+        }}
+      />
     </BottomTab.Navigator>
   );
 }
@@ -79,7 +72,7 @@ function TabOneNavigator() {
 
       <TabOneStack.Screen
         name="TabOneScreen"
-        component={getPlugin}
+        component={TabOneScreen}
         options={{ headerTitle: 'Tab One Title' }}
       />
 

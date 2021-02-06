@@ -5,18 +5,28 @@ interface CheckedPromise<T> {
     cancel: () => void;
 }
 
+export class PromiseCanceledError extends Error {
+    protected isPromiseCanceledError = true;
+    constructor(message?: string) {
+        super(message)
+    }
+    static isError(obj: any): obj is PromiseCanceledError {
+        return (obj as PromiseCanceledError).isPromiseCanceledError;
+    }
+}
+
 function makeCheckedPromise<T>(promise: Promise<T>, safe?: boolean): CheckedPromise<T> {
     let isCanceled = false;
     const wrappedPromise = new Promise<T>((resolve, reject) => {
         promise
             .then(
                 (val: T) => (isCanceled
-                    ? safe ? undefined : reject(new Error('promise cancelled!'))
+                    ? safe ? undefined : reject(new PromiseCanceledError('Promise cancelled!'))
                     : resolve(val))
             )
             .catch(
                 error => (isCanceled
-                    ? safe ? undefined : reject(new Error('promise cancelled!'))
+                    ? safe ? undefined : reject(new PromiseCanceledError(error))
                     : safe ? undefined : reject(error))
             );
     });
