@@ -1,4 +1,4 @@
-import { DataPolicy } from "../../context/dataContext"
+import { DataPolicy } from "../../context/stateManagerDataContext"
 import { useStateManager } from "../../useStateManager"
 
 const testAPI = (args: { name: string }) => Promise.resolve(args.name + args.name)

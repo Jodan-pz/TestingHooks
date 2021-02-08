@@ -1,7 +1,7 @@
 import { useState, useContext } from "react";
 import { ApplicationDataContext } from "./context/ApplicationDataProvider";
-import { DataContextStateType, DataContextActionType, DataPolicy } from "./context/dataContext";
 import { PluginDataContext } from "./context/PluginDataProvider";
+import { createStateManagerContextAction, StateManagerContextActionType, StateManagerDataContextStateType, StateManagerDataOptions } from "./context/stateManagerDataContext";
 import { PromiseCanceledError, useCheckedPromise } from "./useCheckedPromise";
 
 type Arguments<T> = T extends (...args: infer A) => any ? A : never
@@ -13,17 +13,19 @@ interface StateManagerFetch<T> {
 }
 
 interface StateManager<TResult> {
+    key: string;
     store: (toStore: TResult) => void;
     merge: (toStore: Partial<TResult>) => void;
     clear: () => void;
-    retrieve: () => DataContextStateType<TResult>;
+    retrieve: () => StateManagerDataContextStateType<TResult>;
     start: () => void;
     error: (error: any) => void;
 }
 
-function promiseWithStateManager<T>(dataPolicy: DataPolicy, sm: StateManager<T>, promise: Promise<T>) {
+function promiseWithStateManager<T>(dataPolicy: StateManagerDataOptions, sm: StateManager<T>, promise: Promise<T>) {
     let _waiter: number | undefined = undefined
     const st = dataPolicy.smartTracking === undefined ? true : dataPolicy.smartTracking;
+    const _debug = dataPolicy.debug
 
     if (typeof st === 'boolean') {
         if (st) {
@@ -42,30 +44,40 @@ function promiseWithStateManager<T>(dataPolicy: DataPolicy, sm: StateManager<T>,
             }
         }, st, sm);
     }
+
+    if (_debug) console.log('=== USE DATA DEBUG: ' + sm.key, 'start')
+
     promise
         .then(sm.store)
         .catch((err: any) => {
+            if (_debug) console.log('=== USE DATA DEBUG: ' + sm.key, 'error: ' + JSON.stringify(err, null, 2))
             if (err instanceof Error) {
                 if (!PromiseCanceledError.isError(err))
                     sm.error({ ...err, name: err.name, message: err.message })
             } else
                 sm.error(err)
         })
-        .finally(() => { _waiter && clearTimeout(_waiter) })
+        .finally(() => {
+            _waiter && clearTimeout(_waiter)
+            if (_debug) console.log('=== USE DATA DEBUG: ' + sm.key, 'end')
+        })
 }
 
-export function useStateManager<T extends TPromise, TResult extends PromiseResult<ReturnType<T>>>(key: string, dataPolicy: DataPolicy, promise: T): StateManagerFetch<T> & StateManager<TResult> {
-    const stateScope = dataPolicy.scope || 'component'
-    const [data, setData] = useState<DataContextStateType<TResult>>({})
+export function useStateManager<T extends TPromise, TResult extends PromiseResult<ReturnType<T>>>(key: string, dataPolicy: StateManagerDataOptions, promise: T): StateManagerFetch<T> & StateManager<TResult> {
+    const [data, setData] = useState<StateManagerDataContextStateType<TResult>>({})
     const { checkedPromise } = useCheckedPromise()
-    const { contextState, contextStateDispatch } = stateScope === 'plugin' ? useContext(PluginDataContext) : stateScope === 'application' ? useContext(ApplicationDataContext) : {} as any
+    const { contextState: pluginContextState, contextStateDispatch: pluginContextStateDispatch } = useContext(PluginDataContext)
+    const { contextState: appContextState, contextStateDispatch: appContextStateDispatch } = useContext(ApplicationDataContext)
+    const stateScope = dataPolicy.scope || 'component'
+    const contextStateDispatch = stateScope === 'plugin' ? pluginContextStateDispatch : stateScope === 'application' ? appContextStateDispatch : undefined;
+    const contextState = stateScope === 'plugin' ? pluginContextState : stateScope === 'application' ? appContextState : undefined;
 
-    const dispatch = (dispatcher: (action: DataContextActionType) => void, preserveValue: boolean, key: string, toStore: any) => {
+    const dispatch = (dispatcher: (action: StateManagerContextActionType) => void, preserveValue: boolean, key: string, toStore: any) => {
         if (preserveValue) {
-            dispatcher({ key, data: toStore })
+            dispatcher(createStateManagerContextAction(key, toStore))
         }
         else {
-            dispatcher({ key, data: { value: toStore, error: undefined, loading: false } })
+            dispatcher(createStateManagerContextAction(key, { value: toStore, error: undefined, loading: false }))
         }
     }
 
@@ -76,7 +88,9 @@ export function useStateManager<T extends TPromise, TResult extends PromiseResul
                 break;
             case "plugin":
             case "application":
-                dispatch(contextStateDispatch, false, key, undefined)
+                if (contextStateDispatch) {
+                    dispatch(contextStateDispatch, false, key, undefined)
+                }
                 break;
         }
     }
@@ -88,12 +102,17 @@ export function useStateManager<T extends TPromise, TResult extends PromiseResul
                 break;
             case "plugin":
             case "application":
-                dispatch(contextState, false, key, { ...contextState[key]?.value, ...toStore })
+                if (contextStateDispatch) {
+                    if (contextState)
+                        dispatch(contextStateDispatch, false, key, { ...contextState[key]?.value, ...toStore })
+                    else
+                        dispatch(contextStateDispatch, false, key, { ...toStore })
+                }
                 break;
         }
     }
 
-    const store = (toStore: TResult | DataContextStateType<TResult>, preserveValue: boolean = false) => {
+    const store = (toStore: TResult | StateManagerDataContextStateType<TResult>, preserveValue: boolean = false) => {
         switch (stateScope) {
             case "component":
                 if (preserveValue) {
@@ -104,7 +123,9 @@ export function useStateManager<T extends TPromise, TResult extends PromiseResul
                 break;
             case "plugin":
             case "application":
-                dispatch(contextStateDispatch, preserveValue, key, toStore)
+                if (contextStateDispatch) {
+                    dispatch(contextStateDispatch, preserveValue, key, toStore)
+                }
                 break;
         }
     }
@@ -115,7 +136,7 @@ export function useStateManager<T extends TPromise, TResult extends PromiseResul
                 return data;
             case "plugin":
             case "application":
-                return contextState[key] || {};
+                return contextState ? contextState[key] || {} : {}
         }
     }
 
@@ -123,7 +144,7 @@ export function useStateManager<T extends TPromise, TResult extends PromiseResul
 
     const error = (error: any) => store({ loading: false, error }, true)
 
-    const sm = { store, merge, clear, retrieve, start, error }
+    const sm = { key, store, merge, clear, retrieve, start, error }
 
     const fetch = (...args: Arguments<TPromise>) => {
         if (typeof promise === 'function')

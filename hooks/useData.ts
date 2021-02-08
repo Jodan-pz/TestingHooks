@@ -1,5 +1,5 @@
 import { useCallback } from "react"
-import { DataPolicy, DefaultDataPolicy } from "./context/dataContext"
+import { StateManagerDataOptions, StateManagerDefaultDataOptions } from "./context/stateManagerDataContext"
 import { useDataLayers } from "./dataLayer/useDataLayers"
 
 function memoizeFunctions<T>(obj: T): T {
@@ -14,8 +14,8 @@ function memoizeFunctions<T>(obj: T): T {
     }, {})
 }
 
-export const useData = <K extends keyof ReturnType<typeof useDataLayers>>(name: K, dataPolicy?: DataPolicy) => {
+export const useData = <K extends keyof ReturnType<typeof useDataLayers>>(name: K, dataPolicy?: StateManagerDataOptions) => {
     const dataLayers = useDataLayers()
     const dataLayer = dataLayers[name];
-    return memoizeFunctions(dataLayer(dataPolicy || DefaultDataPolicy)) as ReturnType<typeof dataLayer>
+    return memoizeFunctions(dataLayer(dataPolicy || StateManagerDefaultDataOptions)) as ReturnType<typeof dataLayer>
 }

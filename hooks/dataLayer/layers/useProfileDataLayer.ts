@@ -1,17 +1,17 @@
 import Colors from "../../../constants/Colors"
-import { DataPolicy } from "../../context/dataContext"
+import { StateManagerDataOptions } from "../../context/stateManagerDataContext";
 import { useStateManager } from "../../useStateManager"
 
 const getProfile = (args?: { name: string }) => {
-    return new Promise<{colors: typeof Colors}>( (res)=>{
+    return new Promise<{ colors: typeof Colors }>((res) => {
         setTimeout(() => {
-            res({colors:Colors})
+            res({ colors: Colors })
         }, 2000);
     })
 }
 
-export const useProfileDataLayer = (dataPolicy: DataPolicy) => {
-    const profileSM = useStateManager('profile', {scope:'application'}, getProfile)
+export const useProfileDataLayer = (dataPolicy: StateManagerDataOptions) => {
+    const profileSM = useStateManager('profile', { ...dataPolicy, scope: 'application' }, getProfile)
 
     return (
         {

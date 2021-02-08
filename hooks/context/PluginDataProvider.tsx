@@ -1,10 +1,10 @@
 import React, { createContext, useReducer } from "react";
-import { dataContextReducer, DataContextType } from "./dataContext";
+import { createStateManagerContextReducer, StateManagerDataContextProviderProps, StateManagerContextType, stateManagerDataContextReducer } from "./stateManagerDataContext";
 
-export const PluginDataContext = createContext<DataContextType>({} as any)
+export const PluginDataContext = createContext<StateManagerContextType>({} as any)
 
-export const PluginDataProvider = ({ children }: React.PropsWithChildren<any>) => {
-    const [state, dispatch] = useReducer(dataContextReducer, {});
+export const PluginDataProvider = ({ children, reducer }: StateManagerDataContextProviderProps) => {
+    const [state, dispatch] = useReducer(createStateManagerContextReducer(reducer), {});
     return (
         <PluginDataContext.Provider value={{ contextState: state, contextStateDispatch: dispatch }}>
             {children}

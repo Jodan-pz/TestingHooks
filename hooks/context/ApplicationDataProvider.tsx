@@ -1,11 +1,11 @@
 import React, { createContext, useReducer } from "react";
-import { dataContextReducer, DataContextType } from "./dataContext";
+import { createStateManagerContextReducer, StateManagerDataContextProviderProps, StateManagerContextType } from "./stateManagerDataContext";
 
+export const ApplicationDataContext = createContext<StateManagerContextType>({} as any)
 
-export const ApplicationDataContext = createContext<DataContextType>({} as any)
+export const ApplicationDataProvider = ({ children, reducer }: StateManagerDataContextProviderProps) => {
+    const [state, dispatch] = useReducer(createStateManagerContextReducer(reducer), {});
 
-export const ApplicationDataProvider = ({ children }: React.PropsWithChildren<any>) => {
-    const [state, dispatch] = useReducer(dataContextReducer, {});
     return (
         <ApplicationDataContext.Provider value={{ contextState: state, contextStateDispatch: dispatch }}>
             {children}
